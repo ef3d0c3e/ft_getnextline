@@ -14,27 +14,75 @@ struct s_gnl
 	 */
 	int		fd;
 	/**
+	 * @brief Used size (in bytes) of the line
+	 */
+	size_t	line_sz;
+	/**
+	 * @brief Capacity (in bytes) of the line
+	 */
+	size_t	line_cap;
+	/**
 	 * @brief The user's line
 	 */
 	char	*line;
 	/**
-	 * @brief Usable size of the line, for realloc
-	 */
-	size_t	line_size;
-	/**
 	 * @brief GNL internal buffer
+	 *
+	 * @note `BUFFER_SIZE` is controlled via a macro passed directly to the
+	 * compiler, e.g: `-DBUFFER_SIZE=50`
 	 */
 	char	buffer[BUFFER_SIZE];
+	/**
+	 * @brief Position in the buffer
+	 */
+	size_t	buf_pos;
+	/**
+	 * @brief Whether this file needs cleanup
+	 */
+	int		need_clean;
 };
 
+/**
+ * @brief Global GNL data
+ */
 struct s_gnl_data
 {
-	s_gnl	*data;
-	size_t	size;
-	size_t	capacity;
+	/**
+	 * All used GNL files
+	 */
+	struct s_gnl	*data;
+	/**
+	 * @brief The number of GNL files
+	 */
+	size_t			size;
+	/**
+	 * @brief Internal buffer capacity
+	 */
+	size_t			capacity;
 
 };
 
+/**
+ * @brief GNL entry point
+ *
+ * The first call to this function with a new file descriptor will allocate a
+ * @ref s_gnl structure and store it in the global @ref s_gnl_data.
+ * Subsequent calls to this function will return the next line of the file.
+ * When the end of the file is reached, a last call to @ref get_next_line is
+ * expected to perform cleanup. Upon cleanup, all heap data will be freed.
+ *
+ * @param fd The file descriptor to read line by line
+ *
+ * @returns The currently read line in the file descriptor
+ *
+ * @note This function does not reset the cursor in the file descriptor, expect
+ * undefined behaviour if you have read from the file descriptor before/inbetw-
+ * een calls to this fuction.
+ *
+ * @warning This function is not thread safe! Because of a global variable
+ * holding the currently open file descriptors, expect data races when using
+ * @ref get_next_line from multiple threads.
+ */
 char *get_next_line(int fd);
 
 #endif // GET_NEXT_LINE_H
