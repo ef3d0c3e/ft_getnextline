@@ -1,8 +1,23 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line.h                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: lgamba <marvin@student.42perpignan.fr>     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/11/04 11:54:01 by lgamba            #+#    #+#             */
+/*   Updated: 2024/11/05 17:50:12 by lgamba           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 #ifndef GET_NEXT_LINE_H
-#define GET_NEXT_LINE_H
+# define GET_NEXT_LINE_H
 
-#include <stddef.h>
-#define BUFFER_SIZE 42
+# include <stddef.h>
+# include <stdio.h>
+
+# ifndef BUFFER_SIZE
+#  define BUFFER_SIZE 1024
+# endif // BUFFER_SIZE
 
 /**
  * @brief Per file descriptor data
@@ -32,6 +47,12 @@ struct s_gnl
 	 * compiler, e.g: `-DBUFFER_SIZE=50`
 	 */
 	char	buffer[BUFFER_SIZE];
+	/**
+	 * @brief Number of bytes read in the last read() call
+	 *
+	 * Should never exceed @ref BUFFER_SIZE
+	 */
+	ssize_t	nb_read;
 	/**
 	 * @brief Position in the buffer
 	 */
@@ -83,6 +104,6 @@ struct s_gnl_data
  * holding the currently open file descriptors, expect data races when using
  * @ref get_next_line from multiple threads.
  */
-char *get_next_line(int fd);
+char	*get_next_line(int fd);
 
 #endif // GET_NEXT_LINE_H
