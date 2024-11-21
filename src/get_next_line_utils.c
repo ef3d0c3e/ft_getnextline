@@ -11,20 +11,12 @@
 /* ************************************************************************** */
 #include "get_next_line.h"
 #include <stdlib.h>
-#include <string.h>
 
-/* Initializes a new gnl data */
-struct s_gnl	__gnl_init(int fd)
+struct s_gnl_data	*__gnl(void)
 {
-	return ((struct s_gnl){
-		.fd = fd,
-		.line_sz = 0,
-		.line_cap = 0,
-		.line = NULL,
-		.nb_read = 0,
-		.buf_pos = 0,
-		.need_clean = 0,
-	});
+	static struct s_gnl_data	data = {0, 0, 0};
+
+	return (&data);
 }
 
 /* Copies memory from src to dest (n bytes)
@@ -55,7 +47,8 @@ void	*__gnl_realloc(void *p, size_t origsz, size_t newsz)
 		return (q);
 	}
 	__gnl_memcpy(q, p, origsz);
-	free(p);
+	if (p)
+		free(p);
 	return (q);
 }
 

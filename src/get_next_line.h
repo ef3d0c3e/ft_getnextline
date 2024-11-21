@@ -41,26 +41,26 @@ struct s_gnl
 	 */
 	char	*line;
 	/**
-	 * @brief GNL internal buffer
-	 *
-	 * @note `BUFFER_SIZE` is controlled via a macro passed directly to the
-	 * compiler, e.g: `-DBUFFER_SIZE=50`
-	 */
-	char	buffer[BUFFER_SIZE];
-	/**
 	 * @brief Number of bytes read in the last read() call
 	 *
 	 * Should never exceed @ref BUFFER_SIZE
 	 */
 	ssize_t	nb_read;
 	/**
-	 * @brief Position in the buffer
+	 * @brief Position in the read buffer
 	 */
 	size_t	buf_pos;
 	/**
 	 * @brief Whether this file needs cleanup
 	 */
 	int		need_clean;
+	/**
+	 * @brief GNL internal buffer
+	 *
+	 * @note `BUFFER_SIZE` is controlled via a macro passed directly to the
+	 * compiler, e.g: `-DBUFFER_SIZE=50`
+	 */
+	char	buffer[BUFFER_SIZE];
 };
 
 /**

@@ -16,10 +16,10 @@
 #include <threads.h>
 #include <unistd.h>
 
-struct s_gnl	__gnl_init(int fd);
-void			*__gnl_memcpy(void *dest, const void *src, size_t n);
-void			*__gnl_realloc(void *p, size_t origsz, size_t newsz);
-void			*__gnl_memnchr(const void *mem, int c, size_t len);
+struct s_gnl_data	*__gnl(void);
+void				*__gnl_memcpy(void *dest, const void *src, size_t n);
+void				*__gnl_realloc(void *p, size_t origsz, size_t newsz);
+void				*__gnl_memnchr(const void *mem, int c, size_t len);
 /**
  * @brief Ensure the internal line buffer has enough capacity to store
  * @ref at_least.
@@ -30,12 +30,7 @@ void			*__gnl_memnchr(const void *mem, int c, size_t len);
  * @returns 0 on __gnl_realloc failure, in such case the gnl structure should be
  * freed.
  */
-int				__gnl_at_least(struct s_gnl *gnl, size_t at_least);
-
-/**
- * @brief Global variable holding all the file descriptor data
- */
-static struct s_gnl_data	g_gnl_data = {0, 0, 0};
+int					__gnl_at_least(struct s_gnl *gnl, size_t at_least);
 
 /* Cleans the gnl structure inside the global @ref __gnl_data.
  * If @p gnl is NULL, the entire structure is cleared */
@@ -45,27 +40,27 @@ static void	cleanup(struct s_gnl *gnl)
 	size_t	j;
 
 	i = 0;
-	while (i++ < g_gnl_data.size)
+	while (i++ < __gnl()->size)
 	{
 		if (!gnl)
 		{
-			free(g_gnl_data.data[i - 1].line);
-			free(&g_gnl_data.data[i - 1]);
+			free(__gnl()->data[i - 1].line);
+			free(&__gnl()->data[i - 1]);
 			continue ;
 		}
-		else if (&g_gnl_data.data[i - 1] != gnl)
+		else if (&__gnl()->data[i - 1] != gnl)
 			continue ;
 		j = i - 1;
-		while (++j < g_gnl_data.size)
-			g_gnl_data.data[j - 1] = g_gnl_data.data[j];
-		--g_gnl_data.size;
+		while (++j < __gnl()->size)
+			__gnl()->data[j - 1] = __gnl()->data[j];
+		--__gnl()->size;
 		break ;
 	}
 	if (gnl)
 		free(gnl->line);
-	if (!g_gnl_data.size || !gnl)
-		return (g_gnl_data.size = 0, g_gnl_data.capacity = 0,
-			free(g_gnl_data.data));
+	if (!__gnl()->size || !gnl)
+		return (__gnl()->size = 0, __gnl()->capacity = 0,
+			free(__gnl()->data));
 }
 
 /* Get the gnl data for a file descriptor, either by retrieving already existing
@@ -75,21 +70,23 @@ static struct s_gnl	*get_data(int fd)
 	size_t			i;
 
 	i = 0;
-	while (i++ < g_gnl_data.size)
-		if (g_gnl_data.data[i - 1].fd == fd)
-			return (&g_gnl_data.data[i - 1]);
-	if (g_gnl_data.size >= g_gnl_data.capacity)
+	while (i++ < __gnl()->size)
+		if (__gnl()->data[i - 1].fd == fd)
+			return (&__gnl()->data[i - 1]);
+	if (__gnl()->size >= __gnl()->capacity)
 	{
-		g_gnl_data.data = __gnl_realloc(g_gnl_data.data, g_gnl_data.capacity
-				* sizeof(struct s_gnl),
-				((g_gnl_data.capacity + !g_gnl_data.capacity) << 1)
-				* sizeof(struct s_gnl));
-		if (!g_gnl_data.data)
+		__gnl()->data = __gnl_realloc(__gnl()->data, __gnl()->capacity
+			* sizeof(struct s_gnl),
+			((__gnl()->capacity + !__gnl()->capacity) << 1)
+			* sizeof(struct s_gnl));
+		if (!__gnl()->data)
 			return (NULL);
-		g_gnl_data.capacity = (g_gnl_data.capacity + !g_gnl_data.capacity) << 1;
+		__gnl()->capacity = (__gnl()->capacity + !__gnl()->capacity) << 1;
 	}
-	g_gnl_data.data[g_gnl_data.size++] = __gnl_init(fd);
-	return (&g_gnl_data.data[g_gnl_data.size - 1]);
+	i = 0;
+	while (i < sizeof(struct s_gnl))
+		((unsigned char *)&__gnl()->data[__gnl()->size])[i++] = 0;
+	return (&__gnl()->data[__gnl()->size++]);
 }
 
 /**
