@@ -43,7 +43,10 @@ void	*__gnl_realloc(void *p, size_t origsz, size_t newsz)
 	q = malloc(newsz);
 	if (!q)
 	{
-		free(p);
+		{
+			if (p)
+				free(p);
+		}
 		return (q);
 	}
 	__gnl_memcpy(q, p, origsz);

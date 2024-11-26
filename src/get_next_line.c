@@ -10,10 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 #include "get_next_line.h"
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <threads.h>
 #include <unistd.h>
 
 struct s_gnl_data	*__gnl(void);
@@ -37,7 +34,6 @@ int					__gnl_at_least(struct s_gnl *gnl, size_t at_least);
 static void	cleanup(struct s_gnl *gnl)
 {
 	size_t	i;
-	size_t	j;
 
 	i = 0;
 	while (i++ < __gnl()->size)
@@ -50,17 +46,21 @@ static void	cleanup(struct s_gnl *gnl)
 		}
 		else if (&__gnl()->data[i - 1] != gnl)
 			continue ;
-		j = i - 1;
-		while (++j < __gnl()->size)
-			__gnl()->data[j - 1] = __gnl()->data[j];
+		--i;
+		while (++i < __gnl()->size)
+			__gnl()->data[i - 1] = __gnl()->data[i];
 		--__gnl()->size;
 		break ;
 	}
-	if (gnl)
+	if (gnl && gnl->line)
 		free(gnl->line);
 	if (!__gnl()->size || !gnl)
+	{
+		if (__gnl()->data)
+			free(__gnl()->data);
 		return (__gnl()->size = 0, __gnl()->capacity = 0,
-			free(__gnl()->data));
+			__gnl()->data = 0, (void)0);
+	}
 }
 
 /* Get the gnl data for a file descriptor, either by retrieving already existing
@@ -86,6 +86,7 @@ static struct s_gnl	*get_data(int fd)
 	i = 0;
 	while (i < sizeof(struct s_gnl))
 		((unsigned char *)&__gnl()->data[__gnl()->size])[i++] = 0;
+	__gnl()->data[__gnl()->size].fd = fd;
 	return (&__gnl()->data[__gnl()->size++]);
 }
 
@@ -117,7 +118,7 @@ static int	copy_buffer(struct s_gnl *gnl)
 		if (gnl->line_sz)
 			gnl->line[gnl->line_sz] = 0;
 		else
-			return (gnl->need_clean = 1, free(gnl->line), gnl->line = 0, 1);
+			return (cleanup(gnl), 0);
 		return (gnl->need_clean = 1, 1);
 	}
 	else
@@ -167,16 +168,20 @@ char	*get_next_line(int fd)
 		return (cleanup(gnl), NULL);
 	gnl->line_sz = 0;
 	ret = process_carry(gnl);
-	if (ret != 2)
-		return ((char *)(ret * (unsigned long int)gnl->line));
+	if (ret == 0)
+		return (0);
+	else if (ret == 1)
+		return (gnl->line);
 	while (!gnl->need_clean)
 	{
 		gnl->nb_read = read(fd, gnl->buffer, BUFFER_SIZE);
 		if (gnl->nb_read < 0)
 			return (cleanup(gnl), NULL);
 		ret = copy_buffer(gnl);
-		if (ret != 2)
-			return ((char *)(ret * (unsigned long int)gnl->line));
+		if (ret == 0)
+			return (0);
+		else if (ret == 1)
+			return (gnl->line);
 	}
 	return (cleanup(gnl), NULL);
 }
