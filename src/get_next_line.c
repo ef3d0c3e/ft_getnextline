@@ -54,14 +54,20 @@ static void	cleanup(struct s_gnl *gnl)
 	}
 	if (gnl && gnl->line)
 		free(gnl->line);
-	if (!__gnl()->size || !gnl)
-	{
-		if (__gnl()->data)
-			free(__gnl()->data);
-		return (__gnl()->size = 0, __gnl()->capacity = 0,
-			__gnl()->data = 0, (void)0);
-	}
+	((!__gnl()->size || !gnl) && ((void)(__gnl()->data && (free(
+					__gnl()->data), 1)), 1) && (__gnl()->size = 0,
+				__gnl()->capacity = 0,
+			__gnl()->data = 0));
 }
+/*
+   if (!__gnl()->size || !gnl)
+   {
+   if (__gnl()->data)
+   free(__gnl()->data);
+   return (__gnl()->size = 0, __gnl()->capacity = 0,
+   __gnl()->data = 0, (void)0);
+   }
+   */
 
 /* Get the gnl data for a file descriptor, either by retrieving already existing
  * data, or by creating a new one */
