@@ -48,23 +48,15 @@ static void	cleanup(struct s_gnl *gnl)
 					free(&__gnl()->data[i - 1]), 1))
 			|| &__gnl()->data[i - 1] != gnl)
 			continue ;
-		((gnl && gnl->line) && (free(gnl->line), gnl->line = 0, 0)) || ((
-			!__gnl()->size || !gnl) && ((void)(__gnl()->data && (free(__gnl()
-			->data), 1)), 1) && (__gnl()->size = 0, __gnl()->capacity = 0,
-			__gnl()->data = 0, 1));
+		((gnl && gnl->line) && (free(gnl->line), gnl->line = 0, 0));
 		while (i++ < __gnl()->size)
 			__gnl()->data[i - 2] = __gnl()->data[i - 1];
 		--__gnl()->size;
 	}
+	(void)((!__gnl()->size || !gnl) && ((void)(__gnl()->data && (free(__gnl()
+		->data), 1)), 1) && (__gnl()->size = 0, __gnl()->capacity = 0,
+		__gnl()->data = 0, 1));
 }
-/*
-   if (!__gnl()->size || !gnl)
-   {
-   if (__gnl()->data)
-   free(__gnl()->data);
-   return (__gnl()->size = 0, __gnl()->capacity = 0,
-   __gnl()->data = 0, (void)0);
-   */
 
 /* Get the gnl data for a file descriptor, either by retrieving already existing
  * data, or by creating a new one */
@@ -72,6 +64,8 @@ static struct s_gnl	*get_data(int fd)
 {
 	size_t			i;
 
+	if (fd < 0)
+		return (NULL);
 	i = 0;
 	while (i++ < __gnl()->size)
 		if (__gnl()->data[i - 1].fd == fd)
