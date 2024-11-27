@@ -6,7 +6,7 @@
 /*   By: lgamba <marvin@student.42perpignan.fr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/04 11:54:01 by lgamba            #+#    #+#             */
-/*   Updated: 2024/11/27 14:58:28 by lgamba           ###   ########.fr       */
+/*   Updated: 2024/11/05 17:50:12 by lgamba           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #define _GNL_INTERNAL
@@ -48,14 +48,14 @@ static void	cleanup(struct s_gnl *gnl)
 					free(&__gnl()->data[i - 1]), 1))
 			|| &__gnl()->data[i - 1] != gnl)
 			continue ;
+		((gnl && gnl->line) && (free(gnl->line), gnl->line = 0, 0)) || ((
+			!__gnl()->size || !gnl) && ((void)(__gnl()->data && (free(__gnl()
+			->data), 1)), 1) && (__gnl()->size = 0, __gnl()->capacity = 0,
+			__gnl()->data = 0, 1));
 		while (i++ < __gnl()->size)
 			__gnl()->data[i - 2] = __gnl()->data[i - 1];
 		--__gnl()->size;
-		break ;
 	}
-	((gnl && gnl->line) && (free(gnl->line), gnl->line = 0, 0)) || ((!__gnl()
-		->size || !gnl) && ((void)(__gnl()->data && (free(__gnl()->data), 1)),
-		1) && (__gnl()->size = 0, __gnl()->capacity = 0, __gnl()->data = 0, 1));
 }
 /*
    if (!__gnl()->size || !gnl)
@@ -163,8 +163,10 @@ char	*get_next_line(int fd)
 		return (cleanup(gnl), NULL);
 	gnl->line_sz = 0;
 	ret = process_carry(gnl);
-	if (ret != 2)
-		return ((char *)(ret * (unsigned long int)gnl->line));
+	if (ret == 0)
+		return (0);
+	else if (ret == 1)
+		return (gnl->line);
 	while (!gnl->need_clean)
 	{
 		gnl->nb_read = read(fd, gnl->buffer, BUFFER_SIZE);
@@ -178,3 +180,51 @@ char	*get_next_line(int fd)
 	}
 	return (cleanup(gnl), NULL);
 }
+/*
+#include "src/get_next_line.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+int main(int argc, char **argv)
+{
+	char **lines = malloc(sizeof(char*) * (argc - 1));
+	int	*fds = malloc(sizeof(int) * (argc - 1));
+	for (int i = 0; i < argc - 1; ++i)
+	{
+		lines[i] = (char*)1;
+		fds[i] = open(argv[i + 1], O_RDONLY);
+	}
+
+	int cont = 1;
+	size_t linec = 1;
+	while (cont)
+	{
+		cont = 0;
+		for (int i = 0; i < argc - 1; ++i)
+		{
+			if (!lines[i])
+				continue;
+			cont = 1;
+			lines[i] = get_next_line(fds[i]);
+			if (lines[i])
+				printf("%s#%zu:%s", argv[i + 1], linec, lines[i]);
+			if (i == 1)
+				close(fds[i]);
+		}
+		++linec;
+	}
+
+	for (int i = 0; i < argc - 1; ++i)
+		close(fds[i]);
+	free(lines);
+	free(fds);
+
+	//int fd = open("a", O_RDONLY);
+	//printf("%s\n", get_next_line(fd));
+	//printf("%c\n", (get_next_line(fd), 0x61));
+
+	return 0;
+}
+*/

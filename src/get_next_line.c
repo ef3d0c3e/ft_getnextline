@@ -48,14 +48,14 @@ static void	cleanup(struct s_gnl *gnl)
 					free(&__gnl()->data[i - 1]), 1))
 			|| &__gnl()->data[i - 1] != gnl)
 			continue ;
+		((gnl && gnl->line) && (free(gnl->line), gnl->line = 0, 0)) || ((
+			!__gnl()->size || !gnl) && ((void)(__gnl()->data && (free(__gnl()
+			->data), 1)), 1) && (__gnl()->size = 0, __gnl()->capacity = 0,
+			__gnl()->data = 0, 1));
 		while (i++ < __gnl()->size)
 			__gnl()->data[i - 2] = __gnl()->data[i - 1];
 		--__gnl()->size;
-		break ;
 	}
-	((gnl && gnl->line) && (free(gnl->line), gnl->line = 0, 0)) || ((!__gnl()
-		->size || !gnl) && ((void)(__gnl()->data && (free(__gnl()->data), 1)),
-		1) && (__gnl()->size = 0, __gnl()->capacity = 0, __gnl()->data = 0, 1));
 }
 /*
    if (!__gnl()->size || !gnl)
@@ -163,8 +163,10 @@ char	*get_next_line(int fd)
 		return (cleanup(gnl), NULL);
 	gnl->line_sz = 0;
 	ret = process_carry(gnl);
-	if (ret != 2)
-		return ((char *)(ret * (unsigned long int)gnl->line));
+	if (ret == 0)
+		return (0);
+	else if (ret == 1)
+		return (gnl->line);
 	while (!gnl->need_clean)
 	{
 		gnl->nb_read = read(fd, gnl->buffer, BUFFER_SIZE);
