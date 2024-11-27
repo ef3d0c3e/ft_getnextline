@@ -19,8 +19,6 @@ struct s_gnl_data	*__gnl(void)
 	return (&data);
 }
 
-/* Copies memory from src to dest (n bytes)
- * NOTE: dest and src should ne `restrict` */
 void	*__gnl_memcpy(void *dest, const void *src, size_t n)
 {
 	size_t						i;
@@ -40,19 +38,8 @@ void	*__gnl_realloc(void *p, size_t origsz, size_t newsz)
 
 	if (newsz <= origsz)
 		return (p);
-	q = malloc(newsz);
-	if (!q)
-	{
-		{
-			if (p)
-				free(p);
-		}
-		return (q);
-	}
-	__gnl_memcpy(q, p, origsz);
-	if (p)
-		free(p);
-	return (q);
+	return (((!(q = malloc(newsz))) && ((void)(p && (free(p), 0)), 1)) ||
+			(__gnl_memcpy(q, p, origsz) && (!!p && (free(p), 1))), q);
 }
 
 void	*__gnl_memnchr(const void *mem, int c, size_t len)
@@ -60,14 +47,9 @@ void	*__gnl_memnchr(const void *mem, int c, size_t len)
 	const unsigned char	*m;
 
 	m = mem;
-	while (len != 0)
-	{
-		if (*m == (unsigned char)c)
-			return ((void *)m);
-		++m;
-		--len;
-	}
-	return (0);
+	while ((len != 0 && *m != (unsigned char)c) && (++m, --len))
+		;
+	return ((void *)((*m == (unsigned char)c && len) * (unsigned long int)m));
 }
 
 int	__gnl_at_least(struct s_gnl *gnl, size_t at_least)
@@ -79,7 +61,6 @@ int	__gnl_at_least(struct s_gnl *gnl, size_t at_least)
 	newsz = (gnl->line_cap + !gnl->line_cap) << 1;
 	while (newsz < at_least)
 		newsz <<= 1;
-	gnl->line = __gnl_realloc(gnl->line, gnl->line_cap, newsz);
-	gnl->line_cap = newsz;
-	return (!!gnl->line);
+	return (gnl->line = __gnl_realloc(gnl->line, gnl->line_cap, newsz),
+		gnl->line_cap = newsz, !!gnl->line);
 }

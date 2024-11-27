@@ -9,25 +9,10 @@
 /*   Updated: 2024/11/05 17:50:12 by lgamba           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+#define _GNL_INTERNAL
 #include "get_next_line.h"
 #include <stdlib.h>
 #include <unistd.h>
-
-struct s_gnl_data	*__gnl(void);
-void				*__gnl_memcpy(void *dest, const void *src, size_t n);
-void				*__gnl_realloc(void *p, size_t origsz, size_t newsz);
-void				*__gnl_memnchr(const void *mem, int c, size_t len);
-/**
- * @brief Ensure the internal line buffer has enough capacity to store
- * @ref at_least.
- *
- * @param gnl The gnl structure
- * @param at_least Ensures the internal buffer can hold @ref at_least bytes
- *
- * @returns 0 on __gnl_realloc failure, in such case the gnl structure should be
- * freed.
- */
-int					__gnl_at_least(struct s_gnl *gnl, size_t at_least);
 
 /* Cleans the gnl structure inside the global @ref __gnl_data.
  * If @p gnl is NULL, the entire structure is cleared */
@@ -38,26 +23,18 @@ static void	cleanup(struct s_gnl *gnl)
 	i = 0;
 	while (i++ < __gnl()->size)
 	{
-		if (!gnl)
-		{
-			free(__gnl()->data[i - 1].line);
-			free(&__gnl()->data[i - 1]);
+		if ((!gnl && (free(__gnl()->data[i - 1].line),
+					free(&__gnl()->data[i - 1]), 1))
+			|| &__gnl()->data[i - 1] != gnl)
 			continue ;
-		}
-		else if (&__gnl()->data[i - 1] != gnl)
-			continue ;
-		--i;
-		while (++i < __gnl()->size)
-			__gnl()->data[i - 1] = __gnl()->data[i];
+		while (i++ < __gnl()->size)
+			__gnl()->data[i - 2] = __gnl()->data[i - 1];
 		--__gnl()->size;
 		break ;
 	}
-	if (gnl && gnl->line)
-		free(gnl->line);
-	((!__gnl()->size || !gnl) && ((void)(__gnl()->data && (free(
-					__gnl()->data), 1)), 1) && (__gnl()->size = 0,
-				__gnl()->capacity = 0,
-			__gnl()->data = 0));
+	((gnl && gnl->line) && (free(gnl->line), 0)) || ((!__gnl()->size || !gnl)
+	&& ((void)(__gnl()->data && (free(__gnl()->data), 1)), 1) && (__gnl()->size
+	= 0, __gnl()->capacity = 0, __gnl()->data = 0, 1));
 }
 /*
    if (!__gnl()->size || !gnl)
@@ -112,21 +89,14 @@ static int	copy_buffer(struct s_gnl *gnl)
 		return (cleanup(gnl), 0);
 	end = __gnl_memnchr(gnl->buffer, '\n', gnl->nb_read);
 	if (end)
-	{
 		return (__gnl_memcpy(gnl->line + gnl->line_sz, gnl->buffer,
 				(char *)end - gnl->buffer + 1),
 			gnl->line[gnl->line_sz + (char *)end - gnl->buffer + 1] = 0,
 			gnl->buf_pos = (char *)end - gnl->buffer + 1,
 			gnl->line_sz = 0, 1);
-	}
 	else if (!gnl->nb_read)
-	{
-		if (gnl->line_sz)
-			gnl->line[gnl->line_sz] = 0;
-		else
-			return (cleanup(gnl), 0);
-		return (gnl->need_clean = 1, 1);
-	}
+		return ((gnl->line_sz && (gnl->need_clean = 1,
+					gnl->line[gnl->line_sz] = 0, 1)) || (cleanup(gnl), 0));
 	else
 		return (__gnl_memcpy(gnl->line + gnl->line_sz, gnl->buffer,
 				gnl->nb_read), gnl->line_sz += gnl->nb_read, 2);
@@ -144,23 +114,22 @@ static int	process_carry(struct s_gnl *gnl)
 {
 	char	*end;
 
-	if (gnl->buf_pos != 0)
-	{
-		if (!__gnl_at_least(gnl, BUFFER_SIZE + 1))
-			return (cleanup(gnl), 0);
-		end = (char *)__gnl_memnchr(gnl->buffer + gnl->buf_pos,
-				'\n', gnl->nb_read - gnl->buf_pos);
-		if (end)
-			return (gnl->line_sz = end - (gnl->buffer + gnl->buf_pos),
-				__gnl_memcpy(gnl->line, gnl->buffer + gnl->buf_pos,
-					gnl->line_sz + 1),
-				gnl->buf_pos += gnl->line_sz + 1,
-				gnl->line[gnl->line_sz + 1] = 0, 1);
-		gnl->line_sz += gnl->nb_read - gnl->buf_pos;
-		__gnl_memcpy(gnl->line, gnl->buffer + gnl->buf_pos,
-			gnl->nb_read - gnl->buf_pos);
-		gnl->buf_pos = 0;
-	}
+	if (gnl->buf_pos == 0)
+		return (2);
+	if (!__gnl_at_least(gnl, BUFFER_SIZE + 1))
+		return (cleanup(gnl), 0);
+	end = (char *)__gnl_memnchr(gnl->buffer + gnl->buf_pos,
+			'\n', gnl->nb_read - gnl->buf_pos);
+	if (end)
+		return (gnl->line_sz = end - (gnl->buffer + gnl->buf_pos),
+			__gnl_memcpy(gnl->line, gnl->buffer + gnl->buf_pos,
+				gnl->line_sz + 1),
+			gnl->buf_pos += gnl->line_sz + 1,
+			gnl->line[gnl->line_sz + 1] = 0, 1);
+	gnl->line_sz += gnl->nb_read - gnl->buf_pos;
+	__gnl_memcpy(gnl->line, gnl->buffer + gnl->buf_pos,
+		gnl->nb_read - gnl->buf_pos);
+	gnl->buf_pos = 0;
 	return (2);
 }
 
@@ -174,10 +143,8 @@ char	*get_next_line(int fd)
 		return (cleanup(gnl), NULL);
 	gnl->line_sz = 0;
 	ret = process_carry(gnl);
-	if (ret == 0)
-		return (0);
-	else if (ret == 1)
-		return (gnl->line);
+	if (ret != 2)
+		return ((char *)(ret * (unsigned long int)gnl->line));
 	while (!gnl->need_clean)
 	{
 		gnl->nb_read = read(fd, gnl->buffer, BUFFER_SIZE);
