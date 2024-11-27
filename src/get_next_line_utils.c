@@ -38,8 +38,8 @@ void	*__gnl_realloc(void *p, size_t origsz, size_t newsz)
 
 	if (newsz <= origsz)
 		return (p);
-	return (((!(q = malloc(newsz))) && ((void)(p && (free(p), 0)), 1)) ||
-			(__gnl_memcpy(q, p, origsz) && (!!p && (free(p), 1))), q);
+	return ((void)(((!(q = malloc(newsz))) && ((void)(p && (free(p), 0)), 1)) ||
+				(__gnl_memcpy(q, p, origsz) && (!!p && (free(p), 1)))), q);
 }
 
 void	*__gnl_memnchr(const void *mem, int c, size_t len)
@@ -61,6 +61,7 @@ int	__gnl_at_least(struct s_gnl *gnl, size_t at_least)
 	newsz = (gnl->line_cap + !gnl->line_cap) << 1;
 	while (newsz < at_least)
 		newsz <<= 1;
-	return (gnl->line = __gnl_realloc(gnl->line, gnl->line_cap, newsz),
+	gnl->line = __gnl_realloc(gnl->line, gnl->line_cap, newsz);
+	return (
 		gnl->line_cap = newsz, !!gnl->line);
 }

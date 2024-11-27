@@ -14,6 +14,27 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+/*
+#include <link.h>
+#include <malloc.h>
+#include <dlfcn.h>
+#include <sys/cdefs.h>
+
+void free(void *p)
+{
+	printf("Free called for p=%p@%zu\n", p, malloc_usable_size(p));
+	void *handle = dlopen("libc.so.6", RTLD_NOW);
+	void (*ofree)(void*) = dlsym(handle, "free");
+	if (p)
+	{
+		size_t s = malloc_usable_size(p);
+		for (size_t i = 0; i < s; ++i)
+			((unsigned char*)p)[i] = 0;
+	}
+	ofree(p);
+}
+*/
+
 /* Cleans the gnl structure inside the global @ref __gnl_data.
  * If @p gnl is NULL, the entire structure is cleared */
 static void	cleanup(struct s_gnl *gnl)
@@ -32,9 +53,9 @@ static void	cleanup(struct s_gnl *gnl)
 		--__gnl()->size;
 		break ;
 	}
-	((gnl && gnl->line) && (free(gnl->line), 0)) || ((!__gnl()->size || !gnl)
-	&& ((void)(__gnl()->data && (free(__gnl()->data), 1)), 1) && (__gnl()->size
-	= 0, __gnl()->capacity = 0, __gnl()->data = 0, 1));
+	((gnl && gnl->line) && (free(gnl->line), gnl->line = 0, 0)) || ((!__gnl()
+		->size || !gnl) && ((void)(__gnl()->data && (free(__gnl()->data), 1)),
+		1) && (__gnl()->size = 0, __gnl()->capacity = 0, __gnl()->data = 0, 1));
 }
 /*
    if (!__gnl()->size || !gnl)
@@ -43,7 +64,6 @@ static void	cleanup(struct s_gnl *gnl)
    free(__gnl()->data);
    return (__gnl()->size = 0, __gnl()->capacity = 0,
    __gnl()->data = 0, (void)0);
-   }
    */
 
 /* Get the gnl data for a file descriptor, either by retrieving already existing
