@@ -56,6 +56,8 @@ int	__gnl_at_least(struct s_gnl *gnl, size_t at_least)
 {
 	size_t	newsz;
 
+	if (gnl->line_cap == 0)
+		gnl->line = 0;
 	if (gnl->line_cap >= at_least)
 		return (1);
 	newsz = (gnl->line_cap + !gnl->line_cap) << 1;
