@@ -9,7 +9,7 @@
 /*   Updated: 2024/11/05 17:50:12 by lgamba           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-#include "get_next_line.h"
+#include "get_next_line_bonus.h"
 #include <stdlib.h>
 
 struct s_gnl_data	*__gnl(void)

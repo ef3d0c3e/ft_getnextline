@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 #define _GNL_INTERNAL
-#include "get_next_line.h"
+#include "get_next_line_bonus.h"
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -204,8 +204,6 @@ int main(int argc, char **argv)
 			lines[i] = get_next_line(fds[i]);
 			if (lines[i])
 				printf("%s#%zu:%s", argv[i + 1], linec, lines[i]);
-			if (i == 1)
-				close(fds[i]);
 		}
 		++linec;
 	}
