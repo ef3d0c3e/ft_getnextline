@@ -74,11 +74,11 @@ static struct s_gnl	*get_data(int fd)
 	{
 		__gnl()->data = __gnl_realloc(__gnl()->data, __gnl()->capacity
 			* sizeof(struct s_gnl),
-			((__gnl()->capacity + !__gnl()->capacity) << 1)
+			(__gnl()->capacity + 1)
 			* sizeof(struct s_gnl));
 		if (!__gnl()->data)
 			return (NULL);
-		__gnl()->capacity = (__gnl()->capacity + !__gnl()->capacity) << 1;
+		__gnl()->capacity += 1;
 	}
 	i = 0;
 	while (i < sizeof(struct s_gnl))
@@ -221,5 +221,4 @@ int main(int argc, char **argv)
 	//printf("%s\n", get_next_line(fd));
 
 	return 0;
-}
-*/
+}*/
