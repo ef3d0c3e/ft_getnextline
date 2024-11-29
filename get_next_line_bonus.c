@@ -97,9 +97,11 @@ static struct s_gnl	*get_data(int fd)
  */
 static int	copy_buffer(struct s_gnl *gnl)
 {
-	const void		*end;
+	const void		*end = __gnl_memnchr(gnl->buffer, '\n', gnl->nb_read);
+	const size_t	sz = (!!end) * ((char*)end - gnl->buffer + 1)
+		+ (!end) * (gnl->nb_read);
 
-	if (!__gnl_at_least(gnl, gnl->line_sz + gnl->nb_read + 1))
+	if (!__gnl_at_least(gnl, gnl->line_sz + sz + 1))
 		return (cleanup(gnl, 1), 0);
 	end = __gnl_memnchr(gnl->buffer, '\n', gnl->nb_read);
 	if (end)
@@ -130,7 +132,7 @@ static int	process_carry(struct s_gnl *gnl)
 
 	if (gnl->buf_pos == 0)
 		return (2);
-	if (!__gnl_at_least(gnl, BUFFER_SIZE + 1))
+	if (!__gnl_at_least(gnl, gnl->nb_read + 1))
 		return (cleanup(gnl, 1), 0);
 	end = (char *)__gnl_memnchr(gnl->buffer + gnl->buf_pos,
 			'\n', gnl->nb_read - gnl->buf_pos);
